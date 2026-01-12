@@ -445,8 +445,7 @@ export class Controls {
   }
 
   private render(): void {
-    const content = document.createElement('div')
-    content.innerHTML = `
+    this.container.insertAdjacentHTML('beforeend', `
       <button class="toggle-btn" title="Toggle Controls">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 3v18M3 12h18"/>
@@ -516,9 +515,8 @@ export class Controls {
       <div class="keyboard-hint">
         <kbd>Space</kbd> Pause &nbsp; <kbd>R</kbd> Regenerate &nbsp; <kbd>H</kbd> Hide
       </div>
-    `
+    `)
 
-    this.container.appendChild(content)
     this.attachEventListeners()
   }
 
