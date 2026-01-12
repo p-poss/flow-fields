@@ -35,7 +35,7 @@ interface ControlDef {
 
 const PARTICLE_CONTROLS: ControlDef[] = [
   { key: 'particleCount', label: 'Particle Count', min: 1000, max: 100000, step: 1000 },
-  { key: 'particleSpeed', label: 'Speed', min: 0.1, max: 10, step: 0.1 },
+  { key: 'particleSpeed', label: 'Speed', min: 0.01, max: 5, step: 0.01 },
   { key: 'particleSpeedVariation', label: 'Speed Variation', min: 0, max: 5, step: 0.1 },
 ]
 
@@ -60,7 +60,7 @@ const COLOR_CONTROLS: ControlDef[] = [
 const PRESETS: Record<string, Partial<ControlsConfig>> = {
   'Classic Smoke': {
     particleCount: 20000,
-    particleSpeed: 2,
+    particleSpeed: 0.5,
     noiseScale: 0.003,
     noiseOctaves: 1,
     noiseEvolution: 0,
@@ -74,7 +74,7 @@ const PRESETS: Record<string, Partial<ControlsConfig>> = {
   },
   'Ocean Waves': {
     particleCount: 15000,
-    particleSpeed: 1.5,
+    particleSpeed: 0.4,
     noiseScale: 0.004,
     noiseOctaves: 2,
     noiseEvolution: 0.001,
@@ -88,7 +88,7 @@ const PRESETS: Record<string, Partial<ControlsConfig>> = {
   },
   'Fire Storm': {
     particleCount: 25000,
-    particleSpeed: 3,
+    particleSpeed: 0.8,
     noiseScale: 0.005,
     noiseOctaves: 3,
     noiseEvolution: 0.003,
@@ -102,7 +102,7 @@ const PRESETS: Record<string, Partial<ControlsConfig>> = {
   },
   'Aurora': {
     particleCount: 12000,
-    particleSpeed: 1,
+    particleSpeed: 0.3,
     noiseScale: 0.002,
     noiseOctaves: 4,
     noiseEvolution: 0.0005,
@@ -116,7 +116,7 @@ const PRESETS: Record<string, Partial<ControlsConfig>> = {
   },
   'Silk Threads': {
     particleCount: 8000,
-    particleSpeed: 0.5,
+    particleSpeed: 0.15,
     noiseScale: 0.001,
     noiseOctaves: 2,
     noiseEvolution: 0,
@@ -130,7 +130,7 @@ const PRESETS: Record<string, Partial<ControlsConfig>> = {
   },
   'Chaos': {
     particleCount: 50000,
-    particleSpeed: 5,
+    particleSpeed: 1.5,
     noiseScale: 0.015,
     noiseOctaves: 6,
     noiseEvolution: 0.005,

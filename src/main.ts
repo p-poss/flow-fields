@@ -31,7 +31,7 @@ class FlowFieldVisualization {
     // Default configuration
     this.config = {
       particleCount: 20000,
-      particleSpeed: 2,
+      particleSpeed: 0.5,
       particleSpeedVariation: 0.5,
       noiseScale: 0.003,
       noiseOctaves: 1,
