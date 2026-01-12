@@ -179,6 +179,8 @@ export class Controls {
           overflow: hidden;
           transition: transform 0.3s ease, opacity 0.3s ease;
           z-index: 1000;
+          display: flex;
+          flex-direction: column;
         }
 
         #controls-panel.collapsed {
@@ -196,6 +198,7 @@ export class Controls {
           padding: 16px;
           border-bottom: 1px solid rgba(255, 255, 255, 0.1);
           background: rgba(255, 255, 255, 0.05);
+          flex-shrink: 0;
         }
 
         .controls-header h2 {
@@ -227,7 +230,8 @@ export class Controls {
 
         .controls-body {
           padding: 8px 0;
-          max-height: calc(100vh - 140px);
+          flex: 1;
+          min-height: 0;
           overflow-y: auto;
         }
 
@@ -415,6 +419,7 @@ export class Controls {
           background: rgba(255, 255, 255, 0.03);
           font-size: 11px;
           color: rgba(255, 255, 255, 0.4);
+          flex-shrink: 0;
         }
 
         .keyboard-hint {
@@ -423,6 +428,7 @@ export class Controls {
           text-align: center;
           padding: 8px;
           border-top: 1px solid rgba(255, 255, 255, 0.05);
+          flex-shrink: 0;
         }
 
         kbd {
