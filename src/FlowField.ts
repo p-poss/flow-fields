@@ -1,4 +1,5 @@
 import { SimplexNoise } from './noise'
+import { SDF } from './SDF'
 
 export interface Vector {
   x: number
@@ -10,6 +11,9 @@ export class FlowField {
   private scale: number
   private octaves: number
   private zOffset: number
+  private sdf: SDF | null = null
+  private sdfStrength: number = 1.0
+  private sdfFalloff: number = 50
 
   constructor(scale: number, seed?: number) {
     this.noise = new SimplexNoise(seed)
@@ -23,11 +27,59 @@ export class FlowField {
    * Returns a unit vector pointing in the flow direction
    */
   getVector(x: number, y: number): Vector {
+    // Get base Perlin flow vector
     const angle = this.getAngle(x, y)
-    return {
-      x: Math.cos(angle),
-      y: Math.sin(angle)
+    let vx = Math.cos(angle)
+    let vy = Math.sin(angle)
+
+    // Blend with SDF if present
+    if (this.sdf && this.sdf.isLoaded()) {
+      const distance = this.sdf.getDistance(x, y)
+      const gradient = this.sdf.getGradient(x, y)
+
+      // Only influence near boundaries (within falloff distance)
+      const absDistance = Math.abs(distance)
+      if (absDistance < this.sdfFalloff && (gradient.x !== 0 || gradient.y !== 0)) {
+        // Influence strength: 1 at boundary, 0 at falloff distance
+        const t = absDistance / this.sdfFalloff
+        const influence = (1 - t * t) * this.sdfStrength // Quadratic falloff
+
+        // Calculate tangent direction (perpendicular to gradient)
+        // Flow should go around the shape, not into it
+        let tangentX: number
+        let tangentY: number
+
+        if (distance < 0) {
+          // Inside shape: flow towards nearest exit (along gradient)
+          tangentX = gradient.x
+          tangentY = gradient.y
+        } else {
+          // Outside shape: flow tangent to boundary
+          // Choose tangent direction that aligns with current flow
+          const dot = vx * (-gradient.y) + vy * gradient.x
+          if (dot >= 0) {
+            tangentX = -gradient.y
+            tangentY = gradient.x
+          } else {
+            tangentX = gradient.y
+            tangentY = -gradient.x
+          }
+        }
+
+        // Blend flow with tangent
+        vx = vx * (1 - influence) + tangentX * influence
+        vy = vy * (1 - influence) + tangentY * influence
+      }
     }
+
+    // Normalize result
+    const len = Math.sqrt(vx * vx + vy * vy)
+    if (len > 0.0001) {
+      vx /= len
+      vy /= len
+    }
+
+    return { x: vx, y: vy }
   }
 
   /**
@@ -105,5 +157,26 @@ export class FlowField {
   regenerate(seed?: number): void {
     this.noise = new SimplexNoise(seed ?? Math.random() * 2147483647)
     this.zOffset = 0
+  }
+
+  /**
+   * Set SDF for boundary influence
+   */
+  setSDF(sdf: SDF | null): void {
+    this.sdf = sdf
+  }
+
+  /**
+   * Set SDF influence strength (0-2)
+   */
+  setSDFStrength(strength: number): void {
+    this.sdfStrength = Math.max(0, Math.min(2, strength))
+  }
+
+  /**
+   * Set SDF falloff distance (how far from boundary influence extends)
+   */
+  setSDFFalloff(falloff: number): void {
+    this.sdfFalloff = Math.max(1, falloff)
   }
 }

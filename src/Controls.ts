@@ -9,6 +9,10 @@ export interface ControlsConfig {
   noiseOctaves: number
   noiseEvolution: number
 
+  // SDF Boundaries
+  sdfStrength: number
+  sdfFalloff: number
+
   // Rendering
   strokeAlpha: number
   lineWidth: number
@@ -55,6 +59,11 @@ const COLOR_CONTROLS: ControlDef[] = [
   { key: 'hue', label: 'Hue', min: 0, max: 360, step: 1, unit: '°' },
   { key: 'saturation', label: 'Saturation', min: 0, max: 100, step: 1, unit: '%' },
   { key: 'lightness', label: 'Lightness', min: 0, max: 100, step: 1, unit: '%' },
+]
+
+const SDF_CONTROLS: ControlDef[] = [
+  { key: 'sdfStrength', label: 'Strength', min: 0, max: 2, step: 0.1 },
+  { key: 'sdfFalloff', label: 'Falloff', min: 10, max: 200, step: 5, unit: 'px' },
 ]
 
 const PRESETS: Record<string, Partial<ControlsConfig>> = {
@@ -496,6 +505,21 @@ export class Controls {
         </div>
 
         <div class="control-section">
+          <div class="section-title">SVG Boundary</div>
+          <div class="button-group" style="margin-bottom: 12px;">
+            <label class="ctrl-btn primary" style="cursor: pointer; text-align: center;">
+              Upload SVG
+              <input type="file" id="svg-upload" accept=".svg,image/svg+xml" style="display: none;" />
+            </label>
+            <button class="ctrl-btn danger" id="clear-svg-btn">Clear SVG</button>
+          </div>
+          <div id="svg-status" style="font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 12px; text-align: center;">
+            No SVG loaded
+          </div>
+          ${this.renderSliders(SDF_CONTROLS)}
+        </div>
+
+        <div class="control-section">
           <div class="section-title">Actions</div>
           <div class="button-group">
             <button class="ctrl-btn primary" id="regenerate-btn">Regenerate</button>
@@ -567,7 +591,7 @@ export class Controls {
         // Update display value
         const valueDisplay = this.container.querySelector(`[data-value-for="${key}"]`)
         if (valueDisplay) {
-          const ctrl = [...PARTICLE_CONTROLS, ...FLOW_CONTROLS, ...RENDER_CONTROLS, ...COLOR_CONTROLS]
+          const ctrl = [...PARTICLE_CONTROLS, ...FLOW_CONTROLS, ...RENDER_CONTROLS, ...COLOR_CONTROLS, ...SDF_CONTROLS]
             .find(c => c.key === key)
           if (ctrl) {
             const displayValue = ctrl.step < 1 ? value.toFixed(ctrl.step < 0.01 ? 4 : 2) : value
@@ -632,6 +656,21 @@ export class Controls {
       window.dispatchEvent(new CustomEvent('flowfield:save'))
     })
 
+    // SVG upload
+    const svgUpload = this.container.querySelector('#svg-upload') as HTMLInputElement
+    svgUpload.addEventListener('change', async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (file) {
+        window.dispatchEvent(new CustomEvent('flowfield:svg-upload', { detail: { file } }))
+      }
+    })
+
+    // Clear SVG
+    this.container.querySelector('#clear-svg-btn')!.addEventListener('click', () => {
+      window.dispatchEvent(new CustomEvent('flowfield:svg-clear'))
+      svgUpload.value = '' // Reset file input
+    })
+
     // Keyboard shortcuts
     window.addEventListener('keydown', (e) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return
@@ -676,7 +715,7 @@ export class Controls {
 
       const valueDisplay = this.container.querySelector(`[data-value-for="${key}"]`)
       if (valueDisplay) {
-        const ctrl = [...PARTICLE_CONTROLS, ...FLOW_CONTROLS, ...RENDER_CONTROLS, ...COLOR_CONTROLS]
+        const ctrl = [...PARTICLE_CONTROLS, ...FLOW_CONTROLS, ...RENDER_CONTROLS, ...COLOR_CONTROLS, ...SDF_CONTROLS]
           .find(c => c.key === key)
         if (ctrl) {
           const displayValue = ctrl.step < 1 ? value.toFixed(ctrl.step < 0.01 ? 4 : 2) : value
@@ -703,6 +742,19 @@ export class Controls {
     const fpsDisplay = this.container.querySelector('#fps-display')
     if (fpsDisplay) {
       fpsDisplay.textContent = `FPS: ${fps.toFixed(0)}`
+    }
+  }
+
+  updateSVGStatus(filename: string | null): void {
+    const statusEl = this.container.querySelector('#svg-status')
+    if (statusEl) {
+      if (filename) {
+        statusEl.textContent = `Loaded: ${filename}`
+        statusEl.setAttribute('style', 'font-size: 11px; color: rgba(100,255,100,0.8); margin-bottom: 12px; text-align: center;')
+      } else {
+        statusEl.textContent = 'No SVG loaded'
+        statusEl.setAttribute('style', 'font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 12px; text-align: center;')
+      }
     }
   }
 

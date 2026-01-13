@@ -1,6 +1,7 @@
 import { FlowField } from './FlowField'
 import { Particle } from './Particle'
 import { Controls, ControlsConfig } from './Controls'
+import { SDF } from './SDF'
 
 class FlowFieldVisualization {
   private canvas: HTMLCanvasElement
@@ -9,6 +10,7 @@ class FlowFieldVisualization {
   private particles: Particle[]
   private controls: Controls
   private config: ControlsConfig
+  private sdf: SDF | null = null
   private animationId: number | null = null
   private width: number
   private height: number
@@ -36,6 +38,8 @@ class FlowFieldVisualization {
       noiseScale: 0.003,
       noiseOctaves: 1,
       noiseEvolution: 0,
+      sdfStrength: 1.0,
+      sdfFalloff: 50,
       strokeAlpha: 0.05,
       lineWidth: 0.8,
       hue: 0,
@@ -49,6 +53,8 @@ class FlowFieldVisualization {
     // Initialize flow field
     this.flowField = new FlowField(this.config.noiseScale)
     this.flowField.setOctaves(this.config.noiseOctaves)
+    this.flowField.setSDFStrength(this.config.sdfStrength)
+    this.flowField.setSDFFalloff(this.config.sdfFalloff)
 
     // Initialize particles
     this.particles = this.createParticles(this.config.particleCount)
@@ -66,6 +72,8 @@ class FlowFieldVisualization {
     window.addEventListener('flowfield:regenerate', this.regenerate.bind(this))
     window.addEventListener('flowfield:clear', this.clearCanvas.bind(this))
     window.addEventListener('flowfield:save', this.saveImage.bind(this))
+    window.addEventListener('flowfield:svg-upload', ((e: Event) => this.handleSVGUpload(e as CustomEvent<{ file: File }>)) as EventListener)
+    window.addEventListener('flowfield:svg-clear', this.handleSVGClear.bind(this))
   }
 
   private createParticles(count: number): Particle[] {
@@ -109,6 +117,14 @@ class FlowFieldVisualization {
     }
     if (newConfig.noiseOctaves !== oldConfig.noiseOctaves) {
       this.flowField.setOctaves(newConfig.noiseOctaves)
+    }
+
+    // Update SDF settings
+    if (newConfig.sdfStrength !== oldConfig.sdfStrength) {
+      this.flowField.setSDFStrength(newConfig.sdfStrength)
+    }
+    if (newConfig.sdfFalloff !== oldConfig.sdfFalloff) {
+      this.flowField.setSDFFalloff(newConfig.sdfFalloff)
     }
 
     // Update particles if count changed
@@ -169,6 +185,13 @@ class FlowFieldVisualization {
 
     // Update particle bounds
     this.particles.forEach(p => p.setBounds(this.width, this.height))
+
+    // Regenerate SDF if loaded (needs new dimensions)
+    // Note: This would require re-uploading the SVG, which we don't store
+    // For now, clear SDF on resize
+    if (this.sdf) {
+      this.handleSVGClear()
+    }
   }
 
   private regenerate(): void {
@@ -176,6 +199,11 @@ class FlowFieldVisualization {
     this.flowField.regenerate()
     this.flowField.setScale(this.config.noiseScale)
     this.flowField.setOctaves(this.config.noiseOctaves)
+
+    // Re-attach SDF if present
+    if (this.sdf) {
+      this.flowField.setSDF(this.sdf)
+    }
 
     // Reset all particles
     this.particles.forEach(p => p.reset())
@@ -195,6 +223,42 @@ class FlowFieldVisualization {
     link.download = `flow-field-${Date.now()}.png`
     link.href = this.canvas.toDataURL('image/png')
     link.click()
+  }
+
+  private async handleSVGUpload(event: CustomEvent<{ file: File }>): Promise<void> {
+    const file = event.detail.file
+    if (!file) return
+
+    try {
+      const svgString = await file.text()
+
+      // Create and generate SDF
+      this.sdf = new SDF(4) // 4px resolution
+      await this.sdf.fromSVG(svgString, this.width, this.height)
+
+      // Attach to flow field
+      this.flowField.setSDF(this.sdf)
+
+      // Update UI status
+      this.controls.updateSVGStatus(file.name)
+
+      // Reset particles and clear canvas to see effect
+      this.particles.forEach(p => p.reset())
+      this.clearCanvas()
+
+    } catch (error) {
+      console.error('Failed to load SVG:', error)
+      this.controls.updateSVGStatus(null)
+    }
+  }
+
+  private handleSVGClear(): void {
+    if (this.sdf) {
+      this.sdf.clear()
+      this.sdf = null
+    }
+    this.flowField.setSDF(null)
+    this.controls.updateSVGStatus(null)
   }
 
   private getParticleColor(particle: Particle, index: number): string {
